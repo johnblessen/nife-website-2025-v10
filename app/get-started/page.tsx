@@ -1,269 +1,331 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import React, { useState, useRef, useEffect } from "react"
+import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from "@/components/ui/button"
-import { SignupModal } from "@/components/signup-modal"
-import { Shield, CreditCard, Gift, CheckCircle, Clock, ArrowRight, Users, Heart, Sparkles } from "lucide-react"
+import { CheckCircle, Shield, Heart, Zap, Star, X } from "lucide-react"
+import { useRouter } from 'next/navigation'
 
-export default function GetStartedPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [savedProgress, setSavedProgress] = useState<{ step: number } | null>(null)
+const cardTiers = [
+  {
+    id: "individual",
+    name: "Individual Wellness",
+    color: "from-purple-500 to-indigo-500",
+    annualFee: 3499,
+    welcomeBonus: "₹3 Lakh Health Insurance",
+    coverage: "Individual",
+    benefits: [
+      "₹3 Lakh Group Health Insurance",
+      "5 free consultations/month",
+      "Basic wellness marketplace access",
+      "5% hospital cashback",
+      "10% pharmacy discount",
+      "₹2 Lakh accident insurance",
+      "Basic tax benefits",
+    ],
+  },
+  {
+    id: "family-protect",
+    name: "Family Protect Wellness",
+    color: "from-pink-500 to-purple-500",
+    annualFee: 6999,
+    welcomeBonus: "₹5 Lakh Health Insurance",
+    coverage: "2 Adults",
+    benefits: [
+      "₹5 Lakh Group Health Insurance (2 Adults)",
+      "10 free consultations/month",
+      "Priority wellness marketplace access",
+      "7% hospital cashback",
+      "Lenskart Gold Membership",
+      "15% pharmacy discount",
+      "₹5 Lakh accident insurance",
+      "Enhanced tax benefits",
+    ],
+  },
+  {
+    id: "premium-family",
+    name: "Premium Family Wellness",
+    color: "from-yellow-400 to-pink-500",
+    annualFee: 9999,
+    welcomeBonus: "₹10 Lakh Health Insurance",
+    coverage: "2 Adults + 2 Children",
+    benefits: [
+      "₹10 Lakh Group Health Insurance (2 Adults + 2 Children)",
+      "Unlimited Apollo 24/7 consultation",
+      "Exclusive priority wellness access",
+      "10% hospital cashback",
+      "Lenskart Gold + Clove Dental Plan",
+      "20% pharmacy discount",
+      "₹10 Lakh accident insurance",
+      "Maximum tax benefits",
+    ],
+  },
+  {
+    id: "platinum-parents",
+    name: "Platinum Parents Wellness",
+    color: "from-green-400 to-blue-500",
+    annualFee: 8999,
+    welcomeBonus: "₹10 Lakh Health Insurance",
+    coverage: "2 Adults (Senior Care)",
+    benefits: [
+      "₹10 Lakh Group Health Insurance (2 Adults)",
+      "Unlimited Apollo 24/7 + Family consultation",
+      "VIP exclusive wellness access",
+      "15% hospital cashback",
+      "Complete wellness package",
+      "25% pharmacy discount",
+      "₹10 Lakh accident insurance",
+      "Premium tax benefits",
+    ],
+  },
+];
+
+type WellnessPlanSectionProps = {
+  selectedPlan: string;
+  setSelectedPlan: React.Dispatch<React.SetStateAction<string>>;
+  onApply: (planId: string) => void;
+};
+
+type MobileVerificationGateProps = {
+  selectedPlan: string;
+  onVerified: () => void;
+};
+
+function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md p-0 animate-fade-in-up">
+        <button
+          className="absolute top-3 right-3 text-gray-400 hover:text-purple-600 transition"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <X className="h-6 w-6" />
+        </button>
+        <div className="p-0">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WellnessPlanSection({ selectedPlan, setSelectedPlan, onApply }: WellnessPlanSectionProps) {
+  return (
+    <div className="py-16 bg-gradient-to-br from-purple-500 via-pink-400 to-yellow-300 min-h-[60vh]">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-extrabold text-white mb-4 tracking-tight drop-shadow">Choose Your Wellness Plan</h2>
+          <p className="text-white/90 max-w-2xl mx-auto text-lg drop-shadow">
+            Select the perfect plan for your health and wellness needs. All plans include comprehensive healthcare benefits.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          {cardTiers.map((plan) => (
+            <div
+              key={plan.id}
+              className={`group relative rounded-3xl p-1 transition-all duration-300 focus:outline-none ${selectedPlan === plan.id ? 'ring-4 ring-pink-400 scale-105 shadow-2xl' : 'hover:scale-105 hover:shadow-xl'} bg-gradient-to-br ${plan.color}`}
+              onClick={() => setSelectedPlan(plan.id)}
+              tabIndex={0}
+              role="button"
+              aria-pressed={selectedPlan === plan.id}
+            >
+              <div className="flex flex-col h-full w-full bg-white rounded-2xl p-8 transition-all duration-300 group-hover:bg-opacity-95">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-purple-900 mb-2">{plan.name}</h3>
+                  <div className="text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">₹{plan.annualFee.toLocaleString()}<span className="text-lg text-gray-500">/year</span></div>
+                  <p className="text-gray-600">{plan.coverage}</p>
+                </div>
+                <ul className="space-y-2 mb-8 flex-1">
+                  {plan.benefits.map((benefit, i) => (
+                    <li key={i} className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                      <span>{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  className={`w-full block font-bold py-2 rounded-lg mt-auto transition-all duration-200 ${selectedPlan === plan.id ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg' : 'bg-gray-100 text-purple-700 group-hover:bg-gradient-to-r group-hover:from-pink-500 group-hover:to-purple-600 group-hover:text-white'}`}
+                  onClick={e => { e.stopPropagation(); onApply(plan.id); }}
+                  type="button"
+                >
+                  {selectedPlan === plan.id ? 'Apply Now' : 'Apply Now'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileVerificationGate({ selectedPlan, onVerified }: MobileVerificationGateProps) {
+  const [mobile, setMobile] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter();
+
+  // Start resend timer
+  const startResendTimer = () => {
+    setResendTimer(30);
+    timerRef.current = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
-    // Check for saved progress
-    const savedData = localStorage.getItem("signupProgress")
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData)
-        setSavedProgress({ step: parsedData.step })
-      } catch (error) {
-        console.error("Error parsing saved progress:", error)
-      }
+    if (otpVerified) {
+      onVerified();
     }
-  }, [])
-
-  const handleSignup = () => {
-    console.log('Signup button clicked, setting isModalOpen to true')
-    setIsModalOpen(true)
-  }
+  }, [otpVerified, onVerified]);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Main Content */}
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative bg-gradient-to-r from-purple-700 to-purple-900 text-white py-20">
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 bg-[url('/placeholder.svg?height=800&width=1600')] bg-cover bg-center opacity-10"></div>
-          </div>
-          <div className="container relative z-10 mx-auto px-4 flex flex-col items-center text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 max-w-5xl">
-              Protect Your Family's Health & Secure Your Financial Future
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-2xl opacity-90">
-              Join thousands of families who trust NiFe for comprehensive health coverage and financial wellness
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button
-                onClick={handleSignup}
-                size="lg"
-                className="bg-white text-purple-700 hover:bg-gray-100 text-lg px-8"
-              >
-                Get Started Now
-              </Button>
-              {savedProgress && (
-                <Button
-                  onClick={handleSignup}
-                  variant="outline"
-                  size="lg"
-                  className="border-white text-white hover:bg-white/10 text-lg px-8"
-                >
-                  Resume Application
-                </Button>
-              )}
+    <div className="w-full">
+      <div className="max-w-md w-full mx-auto bg-white rounded-xl shadow-none p-8 animate-fade-in-up">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-purple-900 mb-2">Check Your Eligibility!</h2>
+          <p className="text-gray-600">Enter your mobile number to get started</p>
+        </div>
+        
+        {!otpSent && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
+              <input
+                type="tel"
+                value={mobile}
+                onChange={e => setMobile(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
+                placeholder="Enter 10-digit mobile number"
+                className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                maxLength={10}
+              />
             </div>
-            <div className="mt-8 flex items-center justify-center gap-6 text-sm">
-              <div className="flex items-center gap-1">
-                <CheckCircle className="h-4 w-4" />
-                <span>5-minute signup</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle className="h-4 w-4" />
-                <span>Instant approval</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle className="h-4 w-4" />
-                <span>No medical tests</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Benefits Section */}
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">Why Choose NiFe Health?</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-purple-50 rounded-xl p-6 text-center transition-transform hover:scale-105">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="h-8 w-8 text-purple-600" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Health Protection</h3>
-                <p className="text-gray-600">
-                  Comprehensive health insurance coverage up to ₹10L with no medical tests required.
-                </p>
-              </div>
-
-              <div className="bg-purple-50 rounded-xl p-6 text-center transition-transform hover:scale-105">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CreditCard className="h-8 w-8 text-purple-600" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Financial Wellness</h3>
-                <p className="text-gray-600">
-                  RuPay prepaid card with exclusive discounts and rewards on every transaction.
-                </p>
-              </div>
-
-              <div className="bg-purple-50 rounded-xl p-6 text-center transition-transform hover:scale-105">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Gift className="h-8 w-8 text-purple-600" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Exclusive Benefits</h3>
-                <p className="text-gray-600">
-                  Premium partner benefits including Lenskart Gold membership and hospital discounts.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FOMO Section */}
-        <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-4">
-            <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl overflow-hidden shadow-xl">
-              <div className="p-8 md:p-12 flex flex-col md:flex-row items-center">
-                <div className="md:w-2/3 text-white mb-8 md:mb-0">
-                  <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-1 rounded-full text-sm font-medium mb-6">
-                    <Clock className="h-4 w-4" />
-                    Limited Time Offer
-                  </div>
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4">Today is the Day to Protect Your Family</h2>
-                  <p className="text-xl opacity-90 mb-6">
-                    Join now and receive 3 months of free health insurance coverage. This offer expires soon!
-                  </p>
-                  <Button
-                    onClick={handleSignup}
-                    size="lg"
-                    className="bg-white text-purple-700 hover:bg-gray-100"
-                  >
-                    Sign Up Now <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </div>
-                <div className="md:w-1/3 flex justify-center">
-                  <div className="bg-white p-6 rounded-xl text-center w-full max-w-xs">
-                    <div className="text-purple-600 font-bold text-lg mb-2">Offer Ends In:</div>
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                      <div className="bg-gray-100 p-2 rounded">
-                        <div className="text-2xl font-bold">24</div>
-                        <div className="text-xs text-gray-500">Hours</div>
-                      </div>
-                      <div className="bg-gray-100 p-2 rounded">
-                        <div className="text-2xl font-bold">00</div>
-                        <div className="text-xs text-gray-500">Minutes</div>
-                      </div>
-                      <div className="bg-gray-100 p-2 rounded">
-                        <div className="text-2xl font-bold">00</div>
-                        <div className="text-xs text-gray-500">Seconds</div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-500">Don't miss out on this exclusive offer!</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">What Our Members Say</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-2 mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Sparkles key={star} className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-6">
-                  "The NiFe card has been a game-changer for my family. We've saved over ₹25,000 on medical expenses in
-                  just 6 months!"
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Users className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Priya Sharma</p>
-                    <p className="text-sm text-gray-500">Member since 2022</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-2 mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Sparkles key={star} className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-6">
-                  "The signup process was incredibly simple, and I was approved instantly. The gold rewards are an
-                  amazing bonus!"
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Users className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Rahul Patel</p>
-                    <p className="text-sm text-gray-500">Member since 2023</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-2 mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Sparkles key={star} className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-6">
-                  "I love how NiFe combines health insurance with financial benefits. The hospital discounts alone have
-                  paid for my membership!"
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Users className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Ananya Gupta</p>
-                    <p className="text-sm text-gray-500">Member since 2022</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Final CTA */}
-        <section className="py-16 bg-purple-50">
-          <div className="container mx-auto px-4 text-center">
-            <Heart className="h-12 w-12 text-purple-600 mx-auto mb-6" />
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Secure Your Family's Health?</h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Join thousands of families who trust NiFe for their health and financial wellness needs.
-            </p>
             <Button
-              onClick={handleSignup}
-              size="lg"
-              className="bg-purple-600 hover:bg-purple-700 text-lg px-8"
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+              disabled={mobile.length !== 10 || otpLoading}
+              onClick={() => {
+                setOtpLoading(true);
+                setOtpError("");
+                setTimeout(() => {
+                  setOtpSent(true);
+                  setOtpLoading(false);
+                  startResendTimer();
+                }, 1200);
+              }}
             >
-              Get Your NiFe Card Today
+              {otpLoading ? "Sending OTP..." : "Send OTP"}
             </Button>
+            {otpError && <p className="text-sm text-red-600 mt-2 animate-shake">{otpError}</p>}
           </div>
-        </section>
-      </main>
+        )}
 
-      {/* Signup Modal */}
-      <SignupModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)}
-        initialStep={savedProgress?.step || 1}
-      />
+        {otpSent && !otpVerified && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Enter OTP</label>
+              <input
+                type="text"
+                value={otp}
+                onChange={e => setOtp(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                placeholder="Enter 6-digit OTP"
+                className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                maxLength={6}
+              />
+            </div>
+            <Button
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+              disabled={otp.length !== 6 || otpLoading}
+              onClick={() => {
+                setOtpLoading(true);
+                setOtpError("");
+                setTimeout(() => {
+                  setOtpVerified(true);
+                  setOtpLoading(false);
+                }, 1200);
+              }}
+            >
+              {otpLoading ? "Verifying..." : "Verify OTP"}
+            </Button>
+            {otpError && <p className="text-sm text-red-600 mt-2 animate-shake">{otpError}</p>}
+            <div className="text-center">
+              <button
+                className="text-sm text-purple-600 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={resendTimer > 0}
+                onClick={() => {
+                  setOtpLoading(true);
+                  setOtpError("");
+                  setTimeout(() => {
+                    setOtpLoading(false);
+                    startResendTimer();
+                  }, 1200);
+                }}
+              >
+                {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : "Resend OTP"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
+}
+
+export default function GetStartedPage() {
+  const [selectedPlan, setSelectedPlan] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const router = useRouter();
+
+  const handleApply = (planId: string) => {
+    setSelectedPlan(planId);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
+  const handleOtpVerified = () => {
+    router.push(`/get-started/details?plan=${selectedPlan}`);
+  };
+
+  return (
+    <main>
+      <WellnessPlanSection
+        selectedPlan={selectedPlan}
+        setSelectedPlan={setSelectedPlan}
+        onApply={handleApply}
+      />
+      <Modal open={showModal} onClose={handleCloseModal}>
+        <MobileVerificationGate
+          selectedPlan={selectedPlan}
+          onVerified={handleOtpVerified}
+        />
+      </Modal>
+    </main>
+  );
 }

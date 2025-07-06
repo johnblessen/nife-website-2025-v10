@@ -2,6 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animation keyframes */
+@keyframes rotate-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation classes */
+.animate-rotate-slow {
+  animation: rotate-slow 20s linear infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 15s linear infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Network marquee */
+.network-marquee-track {
+  animation: marquee 30s linear infinite;
+}
+
+/* Mouse animate */
+.mouseAnimate {
+  transition: transform 0.3s ease;
+}
+
+.mouseAnimate:hover {
+  transform: scale(1.1);
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -73,4 +161,29 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+.owl-carousel .item {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.owl-carousel .item img {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+.owl-carousel .owl-item {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.owl-carousel .owl-item.active {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
