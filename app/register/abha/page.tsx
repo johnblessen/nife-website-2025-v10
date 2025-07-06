@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Shield, CreditCard, UserPlus, CheckCircle, ArrowRight } from "lucide-react"
 
-export default function ABHARegistration() {
+function ABHARegistrationContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const selectedCard = searchParams.get('card')
@@ -201,10 +201,41 @@ export default function ABHARegistration() {
           </div>
         </div>
 
-        <div className="mt-8 text-center text-gray-600">
-          <p>Need help? <Link href="/support" className="text-purple-600 hover:underline">Contact Support</Link></p>
+        {/* Back to Card Selection */}
+        <div className="text-center mt-8">
+          <Link href={`/register/card-selection`}>
+            <Button variant="outline" className="text-purple-600 border-purple-600 hover:bg-purple-50">
+              ← Back to Card Selection
+            </Button>
+          </Link>
         </div>
       </div>
     </main>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <main className="min-h-screen bg-gray-50 py-12">
+      <div className="container max-w-4xl mx-auto px-4">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">ABHA Registration</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Loading...
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+export default function ABHARegistration() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ABHARegistrationContent />
+    </Suspense>
   )
 } 
