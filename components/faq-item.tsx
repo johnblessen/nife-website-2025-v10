@@ -32,4 +32,4 @@ export function FAQItem({ question, answer, category, colorClass }: FAQItemProps
       )}
     </div>
   )
-} 
+}

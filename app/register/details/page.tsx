@@ -1091,4 +1091,4 @@ export default function RegistrationDetails() {
       </div>
     </main>
   )
-} 
+}

@@ -39,4 +39,4 @@ create_video "public/videos/testimonials/member-stories.mp4" 585 "Member Testimo
 # Clean up
 rm -rf temp_assets
 
-echo "All videos have been generated successfully!" 
+echo "All videos have been generated successfully!"

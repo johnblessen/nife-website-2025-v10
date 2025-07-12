@@ -20,4 +20,4 @@ find . -type f -name "nife-*.png" -o -name "nife-*.jpg" -o -name "nife-*.svg" | 
   fi
 done
 
-echo "Branding update complete!" 
+echo "Branding update complete!"

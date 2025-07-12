@@ -1,136 +1,489 @@
 "use client"
-import React, { useState, useEffect } from 'react';
-import { CheckCircle } from 'lucide-react';
-import CardComparison from '../../../components/card-comparison';
 
-function CheckoutSummary({ plan, user, onPay }: { plan: any, user: any, onPay: (paymentInfo: any) => void }) {
-  const [upiId, setUpiId] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+import type React from "react"
 
-  const handlePay = () => {
-    setError("");
-    if (!upiId.match(/^\w+@\w+$/)) {
-      setError("Please enter a valid UPI ID (e.g. name@bank)");
-      return;
-    }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onPay({ upiId, transactionId: `TXN${Date.now()}` });
-    }, 2000);
-  };
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Shield, AlertTriangle, CheckCircle, User, CreditCard, MapPin } from "lucide-react"
+import Image from "next/image"
 
-  return (
-    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-auto mt-10 animate-fade-in-up">
-      <h2 className="text-2xl font-bold text-purple-900 mb-4">Checkout Summary</h2>
-      <div className="mb-4 text-left">
-        <div className="font-semibold text-lg mb-2">Plan: <span className="text-purple-700">{plan?.name}</span></div>
-        <div className="mb-2">Annual Fee: <span className="font-bold">₹{plan?.annualFee?.toLocaleString()}</span></div>
-        <div className="mb-2">Benefits:</div>
-        <ul className="list-disc ml-6 text-sm text-gray-700 mb-4">
-          {plan?.benefits?.map((b: string, i: number) => <li key={i}>{b}</li>)}
-        </ul>
-        <div className="mb-2">Name: <span className="font-semibold">{user?.fullName}</span></div>
-        <div className="mb-2">Email: <span className="font-semibold">{user?.email}</span></div>
-      </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Pay with UPI</label>
-        <input
-          type="text"
-          value={upiId}
-          onChange={e => setUpiId(e.target.value)}
-          placeholder="yourname@bank"
-          className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-        />
-        {error && <div className="text-red-600 text-xs mt-2 animate-shake">{error}</div>}
-      </div>
-      <button
-        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-        onClick={handlePay}
-        disabled={loading}
-      >
-        {loading ? "Processing..." : `Pay ₹${plan?.annualFee?.toLocaleString()}`}
-      </button>
-    </div>
-  );
-}
-
-function Receipt({ plan, user, payment }: { plan: any, user: any, payment: any }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 via-pink-400 to-yellow-300">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg w-full text-center animate-fade-in-up">
-        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4 animate-bounce" />
-        <h1 className="text-3xl font-bold text-purple-900 mb-4">Payment Successful!</h1>
-        <div className="mb-4 text-left">
-          <div className="mb-2">Transaction ID: <span className="font-mono">{payment.transactionId}</span></div>
-          <div className="mb-2">Date: {new Date().toLocaleString()}</div>
-          <div className="mb-2">Plan: <span className="font-semibold">{plan?.name}</span></div>
-          <div className="mb-2">Name: <span className="font-semibold">{user?.fullName}</span></div>
-          <div className="mb-2">Email: <span className="font-semibold">{user?.email}</span></div>
-          <div className="mb-2">Paid via UPI: <span className="font-mono">{payment.upiId}</span></div>
-          <div className="mb-2">Amount: <span className="font-bold">₹{plan?.annualFee?.toLocaleString()}</span></div>
-        </div>
-        <button
-          className="mt-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:scale-105 transition-all duration-200"
-          onClick={() => window.print()}
-        >
-          Download/Print Receipt
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default function RegisterDetailsPage() {
-  const [showFlow, setShowFlow] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [user, setUser] = useState<any>(null);
-  const [payment, setPayment] = useState<any>(null);
+export default function DetailsPage() {
+  const router = useRouter()
+  const [selectedPlan, setSelectedPlan] = useState<any>(null)
+  const [formData, setFormData] = useState({
+    fullName: "",
+    panName: "",
+    panNumber: "",
+    aadharNumber: "",
+    dateOfBirth: "",
+    age: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    occupation: "",
+  })
+  const [errors, setErrors] = useState<any>({})
+  const [ageValidation, setAgeValidation] = useState<any>(null)
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowFlow(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    // Get selected plan from localStorage
+    const plan = localStorage.getItem("selectedPlan")
+    if (!plan) {
+      router.push("/get-started")
+      return
+    }
+    setSelectedPlan(JSON.parse(plan))
+  }, [router])
 
-  // This function will be called from CardComparison when registration is done
-  const handleRegistrationComplete = (plan: any, userData: any) => {
-    setSelectedPlan(plan);
-    setUser(userData);
-    setShowCheckout(true);
-  };
+  // Calculate age from date of birth
+  const calculateAge = (dob: string) => {
+    const today = new Date()
+    const birthDate = new Date(dob)
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
 
-  const handlePay = (paymentInfo: any) => {
-    setPayment(paymentInfo);
-    setShowReceipt(true);
-  };
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
 
-  if (showReceipt && selectedPlan && user && payment) {
-    return <Receipt plan={selectedPlan} user={user} payment={payment} />;
+    return age
   }
 
-  if (showCheckout && selectedPlan && user) {
+  // Validate age against selected plan
+  const validateAge = (age: number) => {
+    if (!selectedPlan) return null
+
+    const planLimits = {
+      Essential: { min: 18, max: 60 },
+      Premium: { min: 18, max: 65 },
+      Family: { min: 18, max: 65 },
+      Senior: { min: 60, max: 75 },
+    }
+
+    const limits = planLimits[selectedPlan.name as keyof typeof planLimits]
+    if (!limits) return null
+
+    if (age < limits.min || age > limits.max) {
+      return {
+        valid: false,
+        message: `${selectedPlan.name} plan is available for ages ${limits.min}-${limits.max}. Please select a different plan.`,
+        suggestedPlan: age > 60 ? "Senior" : age < 18 ? null : "Essential",
+      }
+    }
+
+    return { valid: true, message: `Age verified for ${selectedPlan.name} plan` }
+  }
+
+  const handleDateOfBirthChange = (dob: string) => {
+    setFormData((prev) => ({ ...prev, dateOfBirth: dob }))
+
+    if (dob) {
+      const age = calculateAge(dob)
+      setFormData((prev) => ({ ...prev, age: age.toString() }))
+
+      const validation = validateAge(age)
+      setAgeValidation(validation)
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors: any = {}
+
+    // Required field validation
+    const requiredFields = [
+      "fullName",
+      "panName",
+      "panNumber",
+      "aadharNumber",
+      "dateOfBirth",
+      "address",
+      "city",
+      "state",
+      "pincode",
+    ]
+
+    requiredFields.forEach((field) => {
+      if (!formData[field as keyof typeof formData]) {
+        newErrors[field] = "This field is required"
+      }
+    })
+
+    // PAN validation
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/
+    if (formData.panNumber && !panRegex.test(formData.panNumber)) {
+      newErrors.panNumber = "Invalid PAN format (e.g., ABCDE1234F)"
+    }
+
+    // Aadhar validation
+    const aadharRegex = /^[0-9]{12}$/
+    if (formData.aadharNumber && !aadharRegex.test(formData.aadharNumber)) {
+      newErrors.aadharNumber = "Aadhar number must be 12 digits"
+    }
+
+    // Pincode validation
+    const pincodeRegex = /^[0-9]{6}$/
+    if (formData.pincode && !pincodeRegex.test(formData.pincode)) {
+      newErrors.pincode = "Pincode must be 6 digits"
+    }
+
+    // Age validation
+    if (ageValidation && !ageValidation.valid) {
+      newErrors.age = ageValidation.message
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
+    if (ageValidation && !ageValidation.valid) {
+      return
+    }
+
+    // Store form data
+    localStorage.setItem("userDetails", JSON.stringify(formData))
+
+    // Redirect to payment
+    router.push("/get-started/payment")
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev: any) => ({ ...prev, [field]: "" }))
+    }
+  }
+
+  if (!selectedPlan) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-500 via-pink-400 to-yellow-300 py-10">
-        <CheckoutSummary plan={selectedPlan} user={user} onPay={handlePay} />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
       </div>
-    );
-  }
-
-  if (showFlow) {
-    // Pass a prop to CardComparison to call handleRegistrationComplete when done
-    return <CardComparison onComplete={handleRegistrationComplete} />;
+    )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 via-pink-400 to-yellow-300">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg w-full text-center animate-fade-in-up">
-        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4 animate-bounce" />
-        <h1 className="text-3xl font-bold text-purple-900 mb-4">Registration Successful!</h1>
-        <p className="text-gray-700 mb-6">You have successfully verified your mobile number. Please continue your registration below.</p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => router.back()}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <Image src="/images/NiFe-logo.png" alt="NiFe Logo" width={120} height={40} />
+            <div className="ml-auto">
+              <Badge variant="outline" className="text-sm">
+                Step 2 of 3: Personal Details
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Selected Plan Summary */}
+          <Card className="mb-8 border-l-4 border-purple-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Selected Plan: {selectedPlan.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Coverage</p>
+                  <p className="font-bold text-lg">{selectedPlan.coverage}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Premium</p>
+                  <p className="font-bold text-lg">{selectedPlan.premium}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Benefits</p>
+                  <p className="text-sm">{selectedPlan.benefits?.slice(0, 2).join(", ")}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Age Validation Alert */}
+          {ageValidation && (
+            <Alert className={`mb-6 ${ageValidation.valid ? "border-green-500" : "border-red-500"}`}>
+              <div className="flex items-center gap-2">
+                {ageValidation.valid ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                )}
+                <AlertDescription className={ageValidation.valid ? "text-green-700" : "text-red-700"}>
+                  {ageValidation.message}
+                  {!ageValidation.valid && ageValidation.suggestedPlan && (
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto ml-2 text-blue-600"
+                      onClick={() => router.push("/get-started")}
+                    >
+                      Change Plan
+                    </Button>
+                  )}
+                </AlertDescription>
+              </div>
+            </Alert>
+          )}
+
+          {/* Personal Details Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Personal Details
+              </CardTitle>
+              <p className="text-gray-600">Please provide accurate information as per your official documents</p>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Personal Information
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="fullName">Full Name *</Label>
+                      <Input
+                        id="fullName"
+                        value={formData.fullName}
+                        onChange={(e) => handleInputChange("fullName", e.target.value)}
+                        placeholder="Enter your full name"
+                        className={errors.fullName ? "border-red-500" : ""}
+                      />
+                      {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="panName">Name as per PAN *</Label>
+                      <Input
+                        id="panName"
+                        value={formData.panName}
+                        onChange={(e) => handleInputChange("panName", e.target.value)}
+                        placeholder="Name exactly as on PAN card"
+                        className={errors.panName ? "border-red-500" : ""}
+                      />
+                      {errors.panName && <p className="text-red-500 text-sm mt-1">{errors.panName}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={formData.dateOfBirth}
+                        onChange={(e) => handleDateOfBirthChange(e.target.value)}
+                        className={errors.dateOfBirth ? "border-red-500" : ""}
+                      />
+                      {errors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{errors.dateOfBirth}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="age">Age</Label>
+                      <Input
+                        id="age"
+                        value={formData.age}
+                        readOnly
+                        placeholder="Calculated from DOB"
+                        className="bg-gray-50"
+                      />
+                      {errors.age && <p className="text-red-500 text-sm mt-1">{errors.age}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="occupation">Occupation</Label>
+                      <Select onValueChange={(value) => handleInputChange("occupation", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select occupation" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="salaried">Salaried Employee</SelectItem>
+                          <SelectItem value="business">Business Owner</SelectItem>
+                          <SelectItem value="professional">Professional</SelectItem>
+                          <SelectItem value="retired">Retired</SelectItem>
+                          <SelectItem value="student">Student</SelectItem>
+                          <SelectItem value="homemaker">Homemaker</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Document Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Document Information
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="panNumber">PAN Card Number *</Label>
+                      <Input
+                        id="panNumber"
+                        value={formData.panNumber}
+                        onChange={(e) => handleInputChange("panNumber", e.target.value.toUpperCase())}
+                        placeholder="ABCDE1234F"
+                        maxLength={10}
+                        className={errors.panNumber ? "border-red-500" : ""}
+                      />
+                      {errors.panNumber && <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="aadharNumber">Aadhar Card Number *</Label>
+                      <Input
+                        id="aadharNumber"
+                        value={formData.aadharNumber}
+                        onChange={(e) => handleInputChange("aadharNumber", e.target.value.replace(/\D/g, ""))}
+                        placeholder="123456789012"
+                        maxLength={12}
+                        className={errors.aadharNumber ? "border-red-500" : ""}
+                      />
+                      {errors.aadharNumber && <p className="text-red-500 text-sm mt-1">{errors.aadharNumber}</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Address Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Address Information
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="address">Full Address *</Label>
+                      <Textarea
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => handleInputChange("address", e.target.value)}
+                        placeholder="Enter your complete address"
+                        rows={3}
+                        className={errors.address ? "border-red-500" : ""}
+                      />
+                      {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="city">City *</Label>
+                        <Input
+                          id="city"
+                          value={formData.city}
+                          onChange={(e) => handleInputChange("city", e.target.value)}
+                          placeholder="Enter city"
+                          className={errors.city ? "border-red-500" : ""}
+                        />
+                        {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="state">State *</Label>
+                        <Select onValueChange={(value) => handleInputChange("state", value)}>
+                          <SelectTrigger className={errors.state ? "border-red-500" : ""}>
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="andhra-pradesh">Andhra Pradesh</SelectItem>
+                            <SelectItem value="arunachal-pradesh">Arunachal Pradesh</SelectItem>
+                            <SelectItem value="assam">Assam</SelectItem>
+                            <SelectItem value="bihar">Bihar</SelectItem>
+                            <SelectItem value="chhattisgarh">Chhattisgarh</SelectItem>
+                            <SelectItem value="goa">Goa</SelectItem>
+                            <SelectItem value="gujarat">Gujarat</SelectItem>
+                            <SelectItem value="haryana">Haryana</SelectItem>
+                            <SelectItem value="himachal-pradesh">Himachal Pradesh</SelectItem>
+                            <SelectItem value="jharkhand">Jharkhand</SelectItem>
+                            <SelectItem value="karnataka">Karnataka</SelectItem>
+                            <SelectItem value="kerala">Kerala</SelectItem>
+                            <SelectItem value="madhya-pradesh">Madhya Pradesh</SelectItem>
+                            <SelectItem value="maharashtra">Maharashtra</SelectItem>
+                            <SelectItem value="manipur">Manipur</SelectItem>
+                            <SelectItem value="meghalaya">Meghalaya</SelectItem>
+                            <SelectItem value="mizoram">Mizoram</SelectItem>
+                            <SelectItem value="nagaland">Nagaland</SelectItem>
+                            <SelectItem value="odisha">Odisha</SelectItem>
+                            <SelectItem value="punjab">Punjab</SelectItem>
+                            <SelectItem value="rajasthan">Rajasthan</SelectItem>
+                            <SelectItem value="sikkim">Sikkim</SelectItem>
+                            <SelectItem value="tamil-nadu">Tamil Nadu</SelectItem>
+                            <SelectItem value="telangana">Telangana</SelectItem>
+                            <SelectItem value="tripura">Tripura</SelectItem>
+                            <SelectItem value="uttar-pradesh">Uttar Pradesh</SelectItem>
+                            <SelectItem value="uttarakhand">Uttarakhand</SelectItem>
+                            <SelectItem value="west-bengal">West Bengal</SelectItem>
+                            <SelectItem value="delhi">Delhi</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="pincode">Pincode *</Label>
+                        <Input
+                          id="pincode"
+                          value={formData.pincode}
+                          onChange={(e) => handleInputChange("pincode", e.target.value.replace(/\D/g, ""))}
+                          placeholder="123456"
+                          maxLength={6}
+                          className={errors.pincode ? "border-red-500" : ""}
+                        />
+                        {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex justify-between pt-6">
+                  <Button type="button" variant="outline" onClick={() => router.back()}>
+                    Back to Plan Selection
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    disabled={ageValidation && !ageValidation.valid}
+                  >
+                    Proceed to Payment
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
-  );
-} 
+  )
+}

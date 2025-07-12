@@ -203,4 +203,4 @@ export default function CardComparison({ onComplete }: CardComparisonProps) {
       </div>
     </main>
   )
-} 
+}
